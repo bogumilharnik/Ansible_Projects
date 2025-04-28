@@ -1,0 +1,58 @@
+---
+- name: Disable default Apache2 site
+  command: a2dissite 000-default.conf
+
+- name: Create document root for new site
+  file:
+    path: /var/www/glpi/public
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Create index.html for new site
+  copy:
+    dest: /var/www/glpi/index.html
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Welcome to New Site</title>
+      </head>
+      <body>
+          <h1>It works!</h1>
+      </body>
+      </html>
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Create Apache2 configuration for new site
+  become: yes
+  copy:
+    dest: /etc/apache2/sites-available/glpi.conf
+    content: |
+      <VirtualHost *:80>
+          ServerAdmin {{ apache_server_admin }}
+          ServerAlias {{ apache_server_alias }}
+          ServerName {{ apache_server_name }}
+          DocumentRoot {{ apache_document_root }}
+          ErrorLog ${APACHE_LOG_DIR}/glpi_error.log
+          CustomLog ${APACHE_LOG_DIR}/glpi_access.log combined
+              <Directory /var/www/glpi/public>
+                  Require all granted
+
+                  RewriteEngine On
+
+                  # Redirect all requests to GLPI router, unless file exists.
+                  RewriteCond %{REQUEST_FILENAME} !-f
+                  RewriteRule ^(.*)$ index.php [QSA,L]
+              </Directory>
+      </VirtualHost>
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable new site
+  command: a2ensite glpi.conf
+  notify: Restart Apache2

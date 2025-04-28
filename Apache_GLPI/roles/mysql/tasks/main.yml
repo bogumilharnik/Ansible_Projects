@@ -1,0 +1,63 @@
+---
+- name: Install MySQL packages
+  apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+      - mysql-common
+    state: present
+    update_cache: yes
+
+- name: Ensure MySQL is running and enabled
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Configure MySQL root to use native password authentication
+  shell: 
+    mysql -u root -p'{{ MySQL_root_pass }}' -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket;"
+    mysql -e "FLUSH PRIVILEGES;"
+  args:
+    executable: /bin/bash
+  become: yes
+
+- name: Update APT cache
+  apt:
+    update_cache: yes
+
+- name: Install required packages for phpMyAdmin
+  apt:
+    name:
+      - phpmyadmin
+      - php-mbstring
+      - php-zip
+      - php-gd
+      - php-json
+      - php-curl
+    state: present
+
+- name: Enable PHP extensions for phpMyAdmin
+  shell: |
+    phpenmod mbstring
+    phpenmod zip
+  args:
+    executable: /bin/bash
+
+- name: Restart Apache to apply changes
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+
+- name: Ensure Python MySQL modules are installed
+  apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
+
+- name: Install PyMySQL globally
+  command: pip3 install PyMySQL --break-system-packages
+  become: yes
+
+...

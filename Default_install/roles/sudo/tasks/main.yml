@@ -1,0 +1,23 @@
+---
+- name: Install sudo
+  apt:
+    name: sudo
+    state: latest
+
+- name: Ensure user exists
+  user:
+    name: bodzio
+    state: present
+    groups: sudo
+    append: yes
+  become: yes
+
+- name: Verify sudo access for user
+  shell: |
+    echo "glpi ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/bodzio
+    chmod 440 /etc/sudoers.d/bodzio
+  args:
+    executable: /bin/bash
+  become: yes
+
+...

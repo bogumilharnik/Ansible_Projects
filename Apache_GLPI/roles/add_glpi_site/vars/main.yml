@@ -1,0 +1,9 @@
+---
+
+apache_server_admin: webmaster@localhost
+apache_server_alias: www.pomoc.urk.edu.pl
+apache_server_name: pomoc.urk.edu.pl
+apache_document_root: /var/www/glpi/public
+
+
+...  
