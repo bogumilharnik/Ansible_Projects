@@ -1,0 +1,9 @@
+---
+
+apache_server_admin: webmaster@localhost
+apache_server_alias: www.----
+apache_server_name: ----
+apache_document_root: /var/www/glpi/public
+
+
+...  

@@ -1,0 +1,35 @@
+---
+- name: Install Apache2
+  apt:
+    name: apache2
+    state: latest
+- name: Enable required Apache2 modules
+  shell: |
+    a2enmod php
+    a2enmod rewrite
+  args:
+    executable: /bin/bash
+  become: yes
+
+- name: Restart Apache2 to apply module changes
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: Ensure Apache2 is listening on port 80
+  lineinfile:
+    path: /etc/apache2/ports.conf
+    regexp: "^Listen 80"
+    line: "Listen 80"
+    state: present
+  become: yes
+
+- name: Restart Apache2 to apply port changes
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+  become: yes    
+...

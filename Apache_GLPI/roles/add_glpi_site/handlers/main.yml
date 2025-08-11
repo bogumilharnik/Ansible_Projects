@@ -1,0 +1,15 @@
+---
+- name: Reload Apache2 after new configuration
+  meta: flush_handlers
+
+#- name: Reload Apache2
+#  service:
+#    name: apache2
+#    state: reloaded
+
+- name: Restart Apache2
+  service:
+    name: apache2
+    state: restarted
+
+...

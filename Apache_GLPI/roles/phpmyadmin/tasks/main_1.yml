@@ -1,0 +1,140 @@
+---
+- name: Update APT cache
+  apt:
+    update_cache: yes
+
+- name: Install required packages for phpMyAdmin
+  apt:
+    name:
+      - phpmyadmin
+      - php-mbstring
+      - php-zip
+      - php-gd
+      - php-json
+      - php-curl
+    state: present
+
+- name: Enable PHP extensions for phpMyAdmin
+  shell: |
+    phpenmod mbstring
+    phpenmod zip
+  args:
+    executable: /bin/bash
+
+- name: Restart Apache to apply changes
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+
+- name: Create phpMyAdmin user in MySQL
+  shell: |
+    mysql -u root -e "CREATE USER IF NOT EXISTS 'phpmyadmin'@'localhost' IDENTIFIED BY '{{ phpmyadmin_password }}'"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION"
+    mysql -u root -e "FLUSH PRIVILEGES"
+  args:
+    executable: /bin/bash
+  become: yes
+
+       
+#- name: Configure dbconfig-common for phpMyAdmin
+#  shell:
+#    echo "phpmyadmin phpmyadmin/app-password-confirm password {{ phpmyadmin_password }}" | debconf-set-selections
+#    echo "phpmyadmin phpmyadmin/mysql/admin-pass password {{ MySQL_root_pass }}" | debconf-set-selections
+#    echo "phpmyadmin phpmyadmin/mysql/app-pass password {{ phpmyadmin_password }}" | debconf-set-selections
+#    echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+#    echo "phpmyadmin phpmyadmin/reconfigure-webserver string apache2" | debconf-set-selections
+#  args:
+#    executable: /bin/bash
+#  become: yes
+
+
+
+- name: Configure dbconfig-common for phpMyAdmin
+  block:
+    - name: Set app-password-confirm for phpMyAdmin
+      command: echo "phpmyadmin phpmyadmin/app-password-confirm password {{ phpmyadmin_password }}" | debconf-set-selections
+      become: yes
+
+    - name: Set mysql admin password for phpMyAdmin
+      command: echo "phpmyadmin phpmyadmin/mysql/admin-pass password {{ MySQL_root_pass }}" | debconf-set-selections
+      become: yes
+
+    - name: Set app password for phpMyAdmin
+      command: echo "phpmyadmin phpmyadmin/mysql/app-pass password {{ phpmyadmin_password }}" | debconf-set-selections
+      become: yes
+
+    - name: Set dbconfig-install for phpMyAdmin
+      command: echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+      become: yes
+
+    - name: Set reconfigure-webserver for phpMyAdmin
+      command: echo "phpmyadmin phpmyadmin/reconfigure-webserver string apache2" | debconf-set-selections
+      become: yes
+  rescue:
+    - name: Debug locked config.dat issue
+      debug:
+        msg: "The debconf database is locked by another process. Ensure no other package manager is running."
+
+#- name: Ensure phpMyAdmin configuration file exists
+#  stat:
+#    path: /etc/apache2/conf-available/phpmyadmin.conf
+#  register: phpmyadmin_conf
+
+- name: Ensure phpMyAdmin configuration file exists
+  stat:
+    path: /etc/apache2/conf-available/phpmyadmin.conf
+  register: phpmyadmin_conf
+
+- name: Debug phpMyAdmin configuration file existence
+  debug:
+    msg: "phpmyadmin_conf.stat.exists: {{ phpmyadmin_conf.stat.exists }}"
+
+- name: Create phpMyAdmin configuration file if missing
+  copy:
+    dest: /etc/apache2/conf-available/phpmyadmin.conf
+    content: |
+      Alias /phpmyadmin /usr/share/phpmyadmin
+
+      <Directory /usr/share/phpmyadmin>
+          Options FollowSymLinks
+          DirectoryIndex index.php
+      </Directory>
+
+      <FilesMatch "\.php$">
+          SetHandler application/x-httpd-php
+      </FilesMatch>
+
+      <Directory /usr/share/phpmyadmin/setup>
+          <IfModule mod_authz_core.c>
+              <RequireAny>
+                  Require all granted
+              </RequireAny>
+          </IfModule>
+      </Directory>
+  when: not phpmyadmin_conf.stat.exists
+  notify: Reload Apache
+
+- name: Enable phpMyAdmin configuration in Apache
+  command: a2enconf phpmyadmin
+  notify: Reload Apache
+
+- name: Enable phpMyAdmin configuration in Apache
+  shell:
+    echo "a2enconf phpmyadmin"
+  when: phpmyadmin_conf.stat.exists
+  notify: Reload Apache
+
+#- name: Create symbolic link for phpMyAdmin
+#  file:
+#  src: /usr/share/phpmyadmin
+#  dest: /var/www/html/phpmyadmin
+#  state: link
+#
+# handlers:
+#- name: Reload Apache
+#  service:
+#  name: apache2
+#  state: reloaded
+
+...

@@ -1,0 +1,35 @@
+---
+ - name: Pull Nginx Image
+     docker_container:
+       name: "nginx-ansible-base"
+       image: "nginx:latest"
+       state: started
+        command: tail -f /dev/null
+
+ - name: Configure Nginx Base Image for deploying Webserver
+   gather_facts: false
+      tasks:
+        - name: Install Python3
+          raw: apt update && apt upgrade -y && apt install python3 -y
+        - name: Install Rsync
+          apt:
+            name: rsync
+        - name: Ensure NGINX Is enabled
+          service:
+            name: nginx
+            enabled: yes
+        - name: Clean up Python 3 and Prequisites
+          raw: apt purge python3 rsync -y
+
+- name: Snapshot base image to create newly configured Imafe
+      tasks:
+        - name: Commit Docker image
+          command: docker commit "nginx-ansible-base" "nginx-ansible-build-demo"
+
+- name: Clean Up Docker Containers
+      tasks:
+        - name: Remove Running Base Image
+          docker_container:
+            name: nginx-ansible-base
+            state: absent
+            force_kill: yes

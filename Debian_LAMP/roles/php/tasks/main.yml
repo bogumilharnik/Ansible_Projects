@@ -1,0 +1,58 @@
+﻿---
+    - name: Installation install software-properties-common
+      apt: name=software-properties-common state=latest
+
+    - name: CA Certificates
+      apt: name=ca-certificates state=latest
+
+    - name: APT Transport HTTPS
+      apt: name=apt-transport-https state=latest
+
+    - name: Import ssh key
+      apt_key:
+        url: https://packages.sury.org/php/apt.gpg
+      when: ansible_distribution == 'Debian'
+
+    - name: Installs the sury php repo on Debian systems
+      apt_repository:
+        repo: deb https://packages.sury.org/php/ {{ ansible_distribution_release }} main
+        state: present
+        filename: sury_php
+        update_cache: yes
+      when: ansible_distribution == 'Debian'
+
+    - name: install PHP8.3
+      apt:
+        name: php8.3
+
+    - name: Install PHP Modules
+      apt:
+        pkg:
+         - php8.3-common
+         - php8.3-dom
+         - php8.3-fileinfo
+         - php8.3-xml
+#         - php8.3-json
+         - php8.3-simplexml
+         - php8.3-xmlreader
+         - php8.3-xmlwriter
+         - php8.3-curl
+         - libapache2-mod-php8.3
+         - php8.3-gd
+         - php8.3-intl
+         - php8.3-mysqli
+#         - php8.3-zlib
+         - php8.3-bz2
+         - php8.3-phar
+         - php8.3-zip
+         - php8.3-exif
+         - php8.3-ldap
+#         - php8.3-openssl
+#         - php8.3-session
+         - php8.3-yaml
+         - php8.3-soap
+         - php8.3-snmp
+         - php8.3-apcu
+
+        update_cache: yes 
+...

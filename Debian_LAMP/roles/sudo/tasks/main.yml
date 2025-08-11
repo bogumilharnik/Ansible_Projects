@@ -1,0 +1,23 @@
+---
+- name: Install sudo
+  apt:
+    name: sudo
+    state: latest
+
+- name: Ensure glpi user exists
+  user:
+    name: glpi
+    state: present
+    groups: sudo
+    append: yes
+  become: yes
+
+- name: Verify sudo access for glpi
+  shell: |
+    echo "glpi ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/glpi
+    chmod 440 /etc/sudoers.d/glpi
+  args:
+    executable: /bin/bash
+  become: yes
+
+...

@@ -1,0 +1,8 @@
+---
+MySQL_root_pass: ""
+admin_password: ""
+MySQL_packages:
+  - mariadb-server
+  - mariadb-client
+  - mysql-common
+
